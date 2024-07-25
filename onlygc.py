@@ -2,6 +2,9 @@ import os
 import requests
 import speech_recognition as sr
 from google.cloud import texttospeech
+import pyaudio
+import wave
+from google.cloud import speech
 from pydub import AudioSegment
 from pydub.playback import play
 import threading
@@ -34,37 +37,80 @@ def speak_prompt(text):
     audio = AudioSegment.from_mp3(audio_io)
     play(audio)
 
-# Function to capture speech and convert to text
-def capture_speech():
-    recognizer = sr.Recognizer()
-    mic = sr.Microphone()
 
+def record_audio(file_path, record_seconds=10, sample_rate=16000):
+    chunk = 1024  # Record in chunks of 1024 samples
+    format = pyaudio.paInt16  # 16 bits per sample
+    channels = 1  # Mono
+    rate = sample_rate
+
+    # Play the beep sound before starting the recording
     sound = AudioSegment.from_mp3('beep.mp3')
     play(sound)
 
-    print("Listening...")
-    with mic as source:
-        recognizer.adjust_for_ambient_noise(source)
-        try:
-            audio = recognizer.listen(source, timeout=10, phrase_time_limit=10)
-        except sr.WaitTimeoutError:
-            print("Listening timed out.")
-            speak_prompt("Sorry, I couldn't catch that. Please say it again!")
-            return capture_speech()
+    p = pyaudio.PyAudio()  # Create an interface to PortAudio
 
-    try:
-        # Convert speech to text
-        text = recognizer.recognize_google(audio)
-        print(f"Captured Speech: {text}")
-        return text
-    except sr.UnknownValueError:
-        print("Sorry, I could not understand the audio.")
-        speak_prompt("Sorry, I couldn't catch that. Please say it again!")
-        return capture_speech()
-    except sr.RequestError:
-        print("Sorry, there was an issue with the speech recognition service.")
-        speak_prompt("Sorry, there was an issue. Please say it again!")
-        return capture_speech()
+    stream = p.open(format=format,
+                    channels=channels,
+                    rate=rate,
+                    input=True,
+                    frames_per_buffer=chunk)
+
+    print("Recording...")
+
+    frames = []
+
+    for i in range(0, int(rate / chunk * record_seconds)):
+        data = stream.read(chunk)
+        frames.append(data)
+
+    print("Recording finished.")
+
+    # Stop and close the stream 
+    stream.stop_stream()
+    stream.close()
+    # Terminate the PortAudio interface
+    p.terminate()
+
+    wf = wave.open(file_path, 'wb')
+    wf.setnchannels(channels)
+    wf.setsampwidth(p.get_sample_size(format))
+    wf.setframerate(rate)
+    wf.writeframes(b''.join(frames))
+    wf.close()
+
+def capture_speech():
+    client = speech.SpeechClient()
+
+    while True:
+        # Record audio and save to a file with a timeout
+        audio_file = "recorded_audio.wav"
+        record_audio(audio_file, record_seconds=10)  # Adjust the recording duration as needed
+
+        with io.open(audio_file, "rb") as audio_file:
+            content = audio_file.read()
+
+        audio = speech.RecognitionAudio(content=content)
+        config = speech.RecognitionConfig(
+            encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+            sample_rate_hertz=16000,
+            language_code="en-US",
+        )
+
+        print("Recognizing speech...")
+        try:
+            response = client.recognize(config=config, audio=audio)
+            for result in response.results:
+                text = result.alternatives[0].transcript
+                if text.strip():  # Check if text is not empty
+                    print(f"Captured Speech: {text}")
+                    return text
+                else:
+                    print("No speech detected, trying again.")
+                    speak_prompt("Sorry, I couldn't hear you. Can you say it again?")
+        except Exception as e:
+            print(f"Error: {e}")
+            speak_prompt("Sorry, I couldn't catch that. Please say it again!")
 
 # Function to generate a story using the Gemini API
 def generate_story(prompt_text, api_key):

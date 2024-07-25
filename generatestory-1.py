@@ -8,7 +8,7 @@ import pyaudio
 import wave
 
 # Path to your service account key file
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "storyteller-429005-67c86f0cca5a.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/sashen/Desktop/storyteller-429005-67c86f0cca5a.json"
 
 # Function to speak a prompt using Google Cloud Text-to-Speech
 def speak_prompt(text):

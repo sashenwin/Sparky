@@ -8,7 +8,7 @@ import threading
 import io
 
 # Path to your service account key file
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "storyteller-429005-67c86f0cca5a.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/sashen/Desktop/storyteller-429005-67c86f0cca5a.json"
 
 # Path to your background music file
 BACKGROUND_MUSIC_PATH = 'background.mp3'
