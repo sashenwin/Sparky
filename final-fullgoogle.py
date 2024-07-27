@@ -268,8 +268,9 @@ def main():
                 play_story(story_text)
                 
                 # Step 2: Capture user input for continuing the story
-                speak_prompt("Tell me what do you think it should do?")
+                speak_prompt("Tell me what do you think it should do after the beep?")
                 user_input = capture_speech()
+                speak_prompt("Gotcha!")
                 
                 if user_input:
                     # Continue the story based on the user's choice
@@ -280,8 +281,9 @@ def main():
                         play_story(story_text)
                         
                         # Step 3: Capture user input for ending the story
-                        speak_prompt("Tell me what do you think it should do?")
+                        speak_prompt("Tell me what do you think it should do after the beep?")
                         user_input = capture_speech()
+                        speak_prompt("Gotcha!")
                         
                         if user_input:
                             # End the story based on the user's choice
